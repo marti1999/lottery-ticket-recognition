@@ -29,12 +29,6 @@ showMatchedFeatures(fixed,moving,inlierfixed,inliermoving);
 title('Matching points (inliers only)');
 legend('ptsfixed','ptsmoving');
 
-Tinv  = tform.invert.T;
-
-ss = Tinv(2,1);
-sc = Tinv(1,1);
-scaleRecovered = sqrt(ss*ss + sc*sc);
-thetaRecovered = atan2(ss,sc)*180/pi;
 
 outputView = imref2d(size(fixed));
 recovered  = imwarp(moving,tform,'OutputView',outputView);
@@ -69,6 +63,10 @@ g = areas > 750 & areas < 1500;
 s = s(g);
 bboxes = vertcat(s(:).BoundingBox);
 
+for i=1:size(bboxes,1)
+    rectangle('Position',bboxes(i,:), 'EdgeColor', 'r', 'LineWidth', 2);
+end
+
 % Sort boxes by image height
 % [~,ord] = sort(bboxes(:,2));
 % bboxes = bboxes(ord,:);
@@ -79,38 +77,5 @@ my_image = imerode(my_image, se);
 ocrResults = ocr(my_image,bboxes,'CharacterSet','0123456789','TextLayout','Character');
 words = {ocrResults(:).Text}';
 
-
-
-
-
-
-
-
-% label = bwlabel(im_binaria);
-% regions = regionprops(label,'Area');
-% area = cat(1,regions.Area);
-% 
-% 
-% propied = regionprops(label, 'BoundingBox', 'Area');
-% 
-% index = 1;
-% for i = 1:size(propied)
-%     if (propied(i).Area > 750 && propied(i).Area < 1500)
-%         rectangle('Position', propied(i).BoundingBox,'EdgeColor', 'r','LineWidth', 2)
-%         roi(index) = propied(i);
-%         index = index +1;
-%     end
-% end
-% 
-% % eliminem els laterals per tal que no toquin les zones blanques.
-% e = strel('square',2);
-% im_binaria2 = imerode(im_binaria2, se);
-% imshow(im_binaria2);
-% 
-% for i=1:size(roi, 2)
-%     box = roi(1, i).BoundingBox;
-%     results(index) = ocr(im_binaria2, box, 'CharacterSet' ,'0123456789', 'TextLayout', 'Character')
-% 
-% end
 
 
