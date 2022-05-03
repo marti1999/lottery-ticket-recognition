@@ -3,14 +3,24 @@ close all;
 clc
 
 %% image alignment
-
+affine = true;
 fixed  = im2gray(imread('../dataset/base_loteria.jpg'));
-moving = im2gray(imread('../dataset/2.jpg'));
+moving = im2gray(imread('../dataset/3.jpg'));
 
 
 % https://www.mathworks.com/help/vision/ug/find-image-rotation-and-scale-using-automated-feature-matching.html
-ptsfixed  = detectSURFFeatures(fixed);
-ptsmoving = detectSURFFeatures(moving);
+if (affine)
+    BW1 = edge(fixed,'canny');
+    BW2 = edge(moving,'canny');
+else
+    BW1 = fixed;
+    BW2 = moving;
+end
+
+ptsfixed  = detectSURFFeatures(BW1);
+% ptsfixed  = detectFASTFeatures(fixed);
+ptsmoving = detectSURFFeatures(BW2);
+% ptsmoving = detectFASTFeatures(moving);
 [featuresfixed,  validPtsfixed]  = extractFeatures(fixed,  ptsfixed);
 [featuresmoving, validPtsmoving] = extractFeatures(moving, ptsmoving);
 indexPairs = matchFeatures(featuresfixed, featuresmoving);
