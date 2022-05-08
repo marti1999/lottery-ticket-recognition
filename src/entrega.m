@@ -4,45 +4,37 @@ clc
 
 %% image alignment
 affine = true;
-fixed  = im2gray(imread('../dataset/base_loteria.jpg'));
-moving = im2gray(imread('../dataset/3.jpg'));
+fixed  = rgb2gray(imread('../dataset/base_loteria.jpg'));
+imMove = imread('../dataset/6.jpg');
+moving = rgb2gray(imMove);
 
 
-% https://www.mathworks.com/help/vision/ug/find-image-rotation-and-scale-using-automated-feature-matching.html
+
+%%%%
+% 1 ---------2
+% |          |
+% |          |
+% |          |
+% 4 ---------3
+%%%%
+
+[x, y] = obtenirPunts(imMove, "Seleccionar les esquines");
+save("puntsHomo2.mat", "x", "y");
+
+
+result = homografiaManual(x, y, moving);
+% result = homografia(fixed, result, BW1, closimg,2);
+figure(), imshow(result, []);
+
 if (affine)
     BW1 = edge(fixed,'canny');
-    BW2 = edge(moving,'canny');
+    BW2 = edge(result,'canny');
 else
     BW1 = fixed;
-    BW2 = moving;
+    BW2 = result;
 end
 
-ptsfixed  = detectSURFFeatures(BW1);
-% ptsfixed  = detectFASTFeatures(fixed);
-ptsmoving = detectSURFFeatures(BW2);
-% ptsmoving = detectFASTFeatures(moving);
-[featuresfixed,  validPtsfixed]  = extractFeatures(fixed,  ptsfixed);
-[featuresmoving, validPtsmoving] = extractFeatures(moving, ptsmoving);
-indexPairs = matchFeatures(featuresfixed, featuresmoving);
-matchedfixed  = validPtsfixed(indexPairs(:,1));
-matchedmoving = validPtsmoving(indexPairs(:,2));
-figure;
-showMatchedFeatures(fixed,moving,matchedfixed,matchedmoving);
-title('Putatively matched points (including outliers)');
-
-[tform, inlierIdx] = estimateGeometricTransform2D(...
-    matchedmoving, matchedfixed, 'similarity');
-inliermoving = matchedmoving(inlierIdx, :);
-inlierfixed  = matchedfixed(inlierIdx, :);
-figure;
-showMatchedFeatures(fixed,moving,inlierfixed,inliermoving);
-title('Matching points (inliers only)');
-legend('ptsfixed','ptsmoving');
-
-
-outputView = imref2d(size(fixed));
-recovered  = imwarp(moving,tform,'OutputView',outputView);
-figure, imshowpair(fixed,recovered,'montage');
+result = homografia(fixed, result, BW1, BW2, 1);
 
 
 %% segona part de homografia
@@ -55,8 +47,8 @@ figure, imshowpair(fixed,recovered,'montage');
 % https://www.mathworks.com/matlabcentral/answers/377444-why-ocr-function-doesn-t-recognize-the-numbers
 % https://www.mathworks.com/matlabcentral/answers/225781-deleting-or-selecting-rows-of-a-struct-with-a-condition
 
-level = graythresh(recovered);
-im_binaria = imbinarize(recovered,level);
+level = graythresh(result);
+im_binaria = imbinarize(result,level);
 figure,imshow(im_binaria);
 im_binaria = imcomplement(im_binaria);
 imshow(im_binaria);
@@ -87,5 +79,69 @@ my_image = imerode(my_image, se);
 ocrResults = ocr(my_image,bboxes,'CharacterSet','0123456789','TextLayout','Character');
 words = {ocrResults(:).Text}';
 
+function result = homografia(fixed, moving, img, img2, homografia)
 
+    ptsfixed  = detectSURFFeatures(img);
+    % ptsfixed  = detectFASTFeatures(fixed);
+    ptsmoving = detectSURFFeatures(img2);
+    % ptsmoving = detectFASTFeatures(moving);
+    [featuresfixed,  validPtsfixed]  = extractFeatures(fixed,  ptsfixed);
+    [featuresmoving, validPtsmoving] = extractFeatures(moving, ptsmoving);
+    indexPairs = matchFeatures(featuresfixed, featuresmoving);
+    matchedfixed  = validPtsfixed(indexPairs(:,1));
+    matchedmoving = validPtsmoving(indexPairs(:,2));
+    figure;
+    showMatchedFeatures(fixed,moving,matchedfixed,matchedmoving);
+    title('Putatively matched points (including outliers)');
+    if(homografia == 1)
+        [tform, inlierIdx] = estimateGeometricTransform2D(matchedmoving, matchedfixed, 'similarity');
+    else
+        [tform, inlierIdx] = estimateGeometricTransform2D(matchedmoving, matchedfixed, 'similarity');
+        
+    end
+    inliermoving = matchedmoving(inlierIdx, :);
+    inlierfixed  = matchedfixed(inlierIdx, :);
+    figure;
+    showMatchedFeatures(fixed,moving,inlierfixed,inliermoving);
+    title('Matching points (inliers only)');
+    legend('ptsfixed','ptsmoving');
+    
+    
+    outputView = imref2d(size(fixed));
+    result  = imwarp(moving,tform,'OutputView',outputView);
+    figure, imshowpair(fixed,result,'montage');
+
+end
+
+function result = homografiaManual(x1, y1, im)
+    load puntsProva.mat;
+    M = [];
+    for i=1:4
+       M = [  M ;
+            x(i) y(i) 1 0 0 0 -x1(i)*x(i) -x1(i)*y(i) -x1(i);
+            0 0 0 x(i) y(i) 1 -y1(i)*x(i) -y1(i)*y(i) -y1(i)];
+    end
+    % soluciono el sistema
+    [u,s,v] = svd( M );
+    H = reshape( v(:,end), 3, 3 )';
+    H = H / H(3,3);
+    % fi DLT 1
+    
+    tform12 = projective2d(inv(H')); % marc de referència
+    Orig = imref2d(size(im));
+    result = imwarp(im,Orig,tform12);
+end
+
+function [x, y] = obtenirPunts(im , text)
+    imshow(im);
+    title(text)
+    x=[]; y=[];
+    for j=1:4
+        zoom on;  
+        pause();
+        zoom off;
+        [x(j),y(j)]=ginput(1);
+        zoom out;
+    end
+end
 
