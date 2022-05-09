@@ -24,7 +24,7 @@ save("puntsHomo2.mat", "x", "y");
 
 result = homografiaManual(x, y, moving);
 % result = homografia(fixed, result, BW1, closimg,2);
-figure(), imshow(result, []);
+% figure(), imshow(result, []);
 
 if (affine)
     BW1 = edge(fixed,'canny');
@@ -47,15 +47,19 @@ result = homografia(fixed, result, BW1, BW2, 1);
 % https://www.mathworks.com/matlabcentral/answers/377444-why-ocr-function-doesn-t-recognize-the-numbers
 % https://www.mathworks.com/matlabcentral/answers/225781-deleting-or-selecting-rows-of-a-struct-with-a-condition
 
-level = graythresh(result);
-im_binaria = imbinarize(result,level);
+% figure(), imshow(result);
+icrop = imcrop(result, [200 40 280 75]);
+figure(), imshow(icrop);
+
+level = graythresh(icrop); 
+im_binaria = imbinarize(icrop,level);
 figure,imshow(im_binaria);
 im_binaria = imcomplement(im_binaria);
 imshow(im_binaria);
 se = strel('square',3);
 im_binaria2 = imopen(im_binaria, se);
 im_binaria2 = imclose(im_binaria2, se);
-imshowpair(im_binaria2, im_binaria, 'montage');
+% imshowpair(im_binaria2, im_binaria, 'montage');
 my_image = im_binaria2;
 
 imshow(my_image)
@@ -67,6 +71,10 @@ bboxes = vertcat(s(:).BoundingBox);
 
 for i=1:size(bboxes,1)
     rectangle('Position',bboxes(i,:), 'EdgeColor', 'r', 'LineWidth', 2);
+    crop = imcrop(my_image, bboxes(i,:));
+    number = num2str(i);
+    name = strcat('../numbers/image_', number, '.jpg');
+    imwrite(crop, name);
 end
 
 % Sort boxes by image height
@@ -90,21 +98,21 @@ function result = homografia(fixed, moving, img, img2, homografia)
     indexPairs = matchFeatures(featuresfixed, featuresmoving);
     matchedfixed  = validPtsfixed(indexPairs(:,1));
     matchedmoving = validPtsmoving(indexPairs(:,2));
-    figure;
-    showMatchedFeatures(fixed,moving,matchedfixed,matchedmoving);
-    title('Putatively matched points (including outliers)');
+%     figure;
+%     showMatchedFeatures(fixed,moving,matchedfixed,matchedmoving);
+%     title('Putatively matched points (including outliers)');
     if(homografia == 1)
         [tform, inlierIdx] = estimateGeometricTransform2D(matchedmoving, matchedfixed, 'similarity');
     else
         [tform, inlierIdx] = estimateGeometricTransform2D(matchedmoving, matchedfixed, 'similarity');
         
     end
-    inliermoving = matchedmoving(inlierIdx, :);
-    inlierfixed  = matchedfixed(inlierIdx, :);
-    figure;
-    showMatchedFeatures(fixed,moving,inlierfixed,inliermoving);
-    title('Matching points (inliers only)');
-    legend('ptsfixed','ptsmoving');
+%     inliermoving = matchedmoving(inlierIdx, :);
+%     inlierfixed  = matchedfixed(inlierIdx, :);
+%     figure;
+%     showMatchedFeatures(fixed,moving,inlierfixed,inliermoving);
+%     title('Matching points (inliers only)');
+%     legend('ptsfixed','ptsmoving');
     
     
     outputView = imref2d(size(fixed));
