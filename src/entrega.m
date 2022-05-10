@@ -5,7 +5,7 @@ clc
 %% image alignment
 affine = true;
 fixed  = rgb2gray(imread('../dataset/base_loteria.jpg'));
-imMove = imread('../dataset/6.jpg');
+imMove = imread('../dataset/4.jpg');
 moving = rgb2gray(imMove);
 
 
@@ -20,10 +20,10 @@ moving = rgb2gray(imMove);
 
 [x, y] = obtenirPunts(imMove, "Seleccionar les esquines");
 save("puntsHomo2.mat", "x", "y");
-
-
 result = homografiaManual(x, y, moving);
+
 % result = homografia(fixed, result, BW1, closimg,2);
+
 % figure(), imshow(result, []);
 
 if (affine)
