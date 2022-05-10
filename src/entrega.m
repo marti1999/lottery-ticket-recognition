@@ -64,9 +64,19 @@ my_image = im_binaria2;
 
 imshow(my_image)
 s = regionprops(my_image,'BoundingBox', 'Area');
-areas = [s.Area];
-g = areas > 600 & areas < 1500;
+% areas = [s.Area];
+% g = areas > 600 & areas < 1500;
+
+% TODO buscar una millor manera de filtrar per alçada
+b = [s.BoundingBox];
+index = 1;
+for i=4:4:size(b, 2)
+    h(index) = b(1,i);
+    index = index + 1;
+end
+g = h > 35 & h < 55;
 s = s(g);
+
 bboxes = vertcat(s(:).BoundingBox);
 
 for i=1:size(bboxes,1)
