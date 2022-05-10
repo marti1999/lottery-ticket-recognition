@@ -5,7 +5,7 @@ clc
 %% image alignment
 affine = true;
 fixed  = rgb2gray(imread('../dataset/base_loteria.jpg'));
-imMove = imread('../dataset/4.jpg');
+imMove = imread('../dataset/2.jpg');
 moving = rgb2gray(imMove);
 
 
@@ -18,7 +18,7 @@ moving = rgb2gray(imMove);
 % 4 ---------3
 %%%%
 
-[x, y] = obtenirPunts(imMove, "Seleccionar les esquines");
+[x, y] = obtenirPunts(imMove, "Seleccionar les cantonades");
 save("puntsHomo2.mat", "x", "y");
 result = homografiaManual(x, y, moving);
 
@@ -48,7 +48,7 @@ result = homografia(fixed, result, BW1, BW2, 1);
 % https://www.mathworks.com/matlabcentral/answers/225781-deleting-or-selecting-rows-of-a-struct-with-a-condition
 
 % figure(), imshow(result);
-icrop = imcrop(result, [200 40 280 75]);
+icrop = imcrop(result, [200 45 280 80]);
 figure(), imshow(icrop);
 
 level = graythresh(icrop); 
@@ -65,7 +65,7 @@ my_image = im_binaria2;
 imshow(my_image)
 s = regionprops(my_image,'BoundingBox', 'Area');
 areas = [s.Area];
-g = areas > 750 & areas < 1500;
+g = areas > 600 & areas < 1500;
 s = s(g);
 bboxes = vertcat(s(:).BoundingBox);
 
@@ -77,15 +77,52 @@ for i=1:size(bboxes,1)
     imwrite(crop, name);
 end
 
-% Sort boxes by image height
-% [~,ord] = sort(bboxes(:,2));
-% bboxes = bboxes(ord,:);
 
 % eliminem els laterals per tal que no toquin les zones blanques.
 e = strel('square',2);
 my_image = imerode(my_image, se);
+
+% ocr automàtic
 ocrResults = ocr(my_image,bboxes,'CharacterSet','0123456789','TextLayout','Character');
-words = {ocrResults(:).Text}';
+wordsAutomatic = {ocrResults(:).Text}';
+
+% el segon parametre de moment pot ser 'mse, 'imsim' i 'psnr'
+wordsManual = ocr_manual(my_image, 'psnr', bboxes);
+
+% ocr manual
+
+
+function words = ocr_manual(img_original, type, bboxes)
+    words = zeros(1, 5);
+
+    for j=1:5
+
+        bw2 = imcrop(img_original, bboxes(j,:));
+        for i=0:9
+            name = strcat('../numbers/', int2str(i), '.jpg');
+            gt = im2uint8(imbinarize(im2gray(imread(name))));
+            img = im2uint8(imresize(bw2, size(gt)));
+            
+            if (strcmp(type, 'mse'))
+                results(i+1) = -immse(gt, img);
+                continue;
+            end
+            if (strcmp(type, 'imsim'))
+                results(i+1) = imsim(gt, img);
+                continue;
+            end
+            if (strcmp(type, 'psnr'))
+                results(i+1) = psnr(gt, img);
+                continue;
+            end
+        end
+        [~, idx] = max(results);
+        words(j) = idx-1;
+
+    end
+
+    
+end
 
 function result = homografia(fixed, moving, img, img2, homografia)
 
