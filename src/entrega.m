@@ -3,9 +3,8 @@ close all;
 clc
 
 %% image alignment
-affine = true;
 fixed  = rgb2gray(imread('../dataset/base_loteria.jpg'));
-imMove = imread('../dataset/2.jpg');
+imMove = imread('../dataset/3.jpg');
 moving = rgb2gray(imMove);
 
 
@@ -18,29 +17,47 @@ moving = rgb2gray(imMove);
 % 4 ---------3
 %%%%
 
-[x, y] = obtenirPunts(imMove, "Seleccionar les cantonades");
-save("puntsHomo2.mat", "x", "y");
-result = homografiaManual(x, y, moving);
+% [x, y] = obtenirPunts(imMove, "Seleccionar les cantonades");
+% save("puntsHomo2.mat", "x", "y");
+% result = homografiaManual(x, y, moving);
+desc = cell(1,2);
+pt = cell(1);
+[result, pt{1}, desc{1}] = harris(moving);
+[result2, pt{2}, desc{2}] = harris(fixed);
+
+N=100;
+match = zeros(1,N);
+matchedfixed = zeros(N,2);
+matchedmoving = zeros(N,2);
+
+for j=1:N
+    d1=desc{1}(:,:,j);
+    value = min(sum(sum(abs(desc{2}-d1))));
+    [~,match(j)]=min(sum(sum(abs(desc{2}-d1))));
+end
+for i=1:N
+    valor = match(i);
+    matchedfixed(i,:)  = pt{2}(match(i),:);
+    matchedmoving(i,:) = pt{1}(match(i),:);
+end
+
+
+[tform, ~] = estimateGeometricTransform2D(matchedmoving, matchedfixed, 'similarity');
+
+outputView = imref2d(size(fixed));
+result  = imwarp(moving,tform,'OutputView',outputView);
+figure, imshowpair(fixed,result,'montage');
+
+
 
 % result = homografia(fixed, result, BW1, closimg,2);
 
 % figure(), imshow(result, []);
 
-if (affine)
-    BW1 = edge(fixed,'canny');
-    BW2 = edge(result,'canny');
-else
-    BW1 = fixed;
-    BW2 = result;
-end
+BW1 = edge(fixed,'canny');
+BW2 = edge(result,'canny');
 
-result = homografia(fixed, result, BW1, BW2, 1);
-
-
-%% segona part de homografia
-% [optimizer,metric] = imregconfig('multimodal');
-% movingRegisteredDefault = imregister(recovered,fixed,'affine',optimizer,metric);
-% figure, imshowpair(fixed,movingRegisteredDefault,'montage')
+result = homografia(fixed, result, BW1, BW2);
 
 %% trobar nums
 % https://www.mathworks.com/help/vision/ug/recognize-text-using-optical-character-recognition-ocr.html
@@ -134,7 +151,7 @@ function words = ocr_manual(img_original, type, bboxes)
     
 end
 
-function result = homografia(fixed, moving, img, img2, homografia)
+function result = homografia(fixed, moving, img, img2)
 
     ptsfixed  = detectSURFFeatures(img);
     % ptsfixed  = detectFASTFeatures(fixed);
@@ -148,12 +165,8 @@ function result = homografia(fixed, moving, img, img2, homografia)
 %     figure;
 %     showMatchedFeatures(fixed,moving,matchedfixed,matchedmoving);
 %     title('Putatively matched points (including outliers)');
-    if(homografia == 1)
-        [tform, inlierIdx] = estimateGeometricTransform2D(matchedmoving, matchedfixed, 'similarity');
-    else
-        [tform, inlierIdx] = estimateGeometricTransform2D(matchedmoving, matchedfixed, 'similarity');
-        
-    end
+    [tform, ~] = estimateGeometricTransform2D(matchedmoving, matchedfixed, 'similarity');
+   
 %     inliermoving = matchedmoving(inlierIdx, :);
 %     inlierfixed  = matchedfixed(inlierIdx, :);
 %     figure;
