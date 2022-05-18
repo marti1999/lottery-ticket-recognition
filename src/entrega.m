@@ -20,9 +20,13 @@ moving = rgb2gray(imMove);
 % [x, y] = obtenirPunts(imMove, "Seleccionar les cantonades");
 % save("puntsHomo2.mat", "x", "y");
 % result = homografiaManual(x, y, moving);
+% figure(), imshow(result);
+
 desc = cell(1,2);
 pt = cell(1);
 [result, pt{1}, desc{1}] = harris(moving);
+
+figure(), imshow(result);
 [result2, pt{2}, desc{2}] = harris(fixed);
 
 N=100;
@@ -50,9 +54,9 @@ figure, imshowpair(fixed,result,'montage');
 
 
 
-% result = homografia(fixed, result, BW1, closimg,2);
+result = homografia(fixed, result, BW1, closimg,2);
 
-% figure(), imshow(result, []);
+figure(), imshow(result, []);
 
 BW1 = edge(fixed,'canny');
 BW2 = edge(result,'canny');
