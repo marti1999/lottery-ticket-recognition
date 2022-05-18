@@ -104,6 +104,17 @@ for i=m1:b1(1)-m1
     end
 end
 
+% figure;
+% imagesc(R);
+% figure;
+% imshow(Cor);
+% figure;
+% imshow(Edg);
+% figure;
+% imshow(Fla);
+
+R1= R(:);
+
 Rsort = sort(R1,'descend');
 
 out = zeros(b1(1)-2*m1,b1(2)-2*m1);
@@ -116,9 +127,6 @@ for i=m1:b1(1)-m1
             end
     end
 end
-
-figure(6);
-imshow(out);
 
 [row, col] = find(out);
 windows = 1;
